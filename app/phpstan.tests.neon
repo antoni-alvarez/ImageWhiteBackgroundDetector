@@ -1,0 +1,7 @@
+parameters:
+    level: 5
+    fileExtensions:
+        - php
+    paths:
+        - tests/
+    tmpDir: var/phpstan

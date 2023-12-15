@@ -1,0 +1,16 @@
+parameters:
+    level: max
+    fileExtensions:
+        - php
+    paths:
+        - src/
+    phpat:
+        ignore_built_in_classes: false
+        show_rule_names: true
+    tmpDir: var/phpstan
+
+services:
+    -
+        class: Tests\PHPat\ArchitectureTest
+        tags:
+            - phpat.test
