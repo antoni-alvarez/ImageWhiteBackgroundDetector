@@ -16,7 +16,6 @@ use function imagedestroy;
 use function imagesx;
 use function imagesy;
 use function max;
-use function mt_rand;
 use function sprintf;
 
 class AnalyzeImageBackground
@@ -68,24 +67,24 @@ class AnalyzeImageBackground
         $transparentPoints = 0;
 
         for ($i = 0; $i < self::NUM_POINTS; $i++) {
-            $border = mt_rand(self::BORDER_TOP, self::BORDER_RIGHT);
+            $border = $this->randomizer->getInt(self::BORDER_TOP, self::BORDER_RIGHT);
 
             switch ($border) {
                 case self::BORDER_TOP:
-                    $x = mt_rand(0, $width - 1);
-                    $y = mt_rand(0, (int) $borderHeight - 1);
+                    $x = $this->randomizer->getInt(0, $width - 1);
+                    $y = $this->randomizer->getInt(0, (int) $borderHeight - 1);
                     break;
                 case self::BORDER_BOTTOM:
-                    $x = mt_rand(0, $width - 1);
-                    $y = mt_rand((int) ($height - $borderHeight), $height - 1);
+                    $x = $this->randomizer->getInt(0, $width - 1);
+                    $y = $this->randomizer->getInt((int) ($height - $borderHeight), $height - 1);
                     break;
                 case self::BORDER_LEFT:
-                    $x = mt_rand(0, (int) $borderWidth - 1);
-                    $y = mt_rand(0, $height - 1);
+                    $x = $this->randomizer->getInt(0, (int) $borderWidth - 1);
+                    $y = $this->randomizer->getInt(0, $height - 1);
                     break;
                 case self::BORDER_RIGHT:
-                    $x = mt_rand((int) ($width - $borderWidth), $width - 1);
-                    $y = mt_rand(0, $height - 1);
+                    $x = $this->randomizer->getInt((int) ($width - $borderWidth), $width - 1);
+                    $y = $this->randomizer->getInt(0, $height - 1);
                     break;
             }
 
