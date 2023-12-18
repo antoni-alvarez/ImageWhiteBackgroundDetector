@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\ImageAnalyze;
 
-use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 
-use Symfony\Component\Filesystem\Exception\IOException;
 use function file_exists;
-use function file_get_contents;
 use function getimagesize;
-use function imagecreatefromstring;
-use function imagedestroy;
 use function pathinfo;
 use function rename;
 use function sprintf;
@@ -29,22 +24,6 @@ class FixImageFormat
 {
     public function execute(string $oldImagePath): bool
     {
-        $file = file_get_contents($oldImagePath);
-
-        if ($file === false) {
-            throw new IOException(sprintf('Error opening file %s', $oldImagePath));
-        }
-
-        try {
-            $image = imagecreatefromstring($file);
-        } catch (Exception) {
-            throw new Exception(sprintf('Critical error reading image %s', $oldImagePath));
-        }
-
-        if ($image === false) {
-            throw new Exception(sprintf('Error opening image %s', $oldImagePath));
-        }
-
         $newImageName = $this->getFixedImageName($oldImagePath);
 
         $newImagePath = pathinfo($oldImagePath, PATHINFO_DIRNAME) . $newImageName;
@@ -52,8 +31,6 @@ class FixImageFormat
         if (false === rename($oldImagePath, $newImagePath)) {
             throw new RuntimeException(sprintf('Error changing file extension for image %s', $oldImagePath));
         }
-
-        imagedestroy($image);
 
         return $oldImagePath !== $newImagePath;
     }
