@@ -18,7 +18,7 @@ use function imagesy;
 use function max;
 use function sprintf;
 
-class AnalyzeImageBackground
+class ValidBackground
 {
     private const int BORDER_TOP = 1;
     private const int BORDER_BOTTOM = 2;
