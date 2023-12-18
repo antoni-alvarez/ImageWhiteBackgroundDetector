@@ -10,11 +10,13 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\KernelInterface;
 
+use function array_map;
 use function count;
 use function microtime;
 use function number_format;
@@ -28,6 +30,7 @@ class WhiteBackgroundDetector extends Command
 {
     private const string VALID_IMAGES_PATH = '/public/images/valid';
     private const string INVALID_IMAGES_PATH = '/public/images/invalid';
+    private bool $strictMode;
 
     public function __construct(
         private readonly AnalyzeImageBackground $analyzeImage,
@@ -36,13 +39,23 @@ class WhiteBackgroundDetector extends Command
         parent::__construct();
     }
 
+    protected function configure(): void
+    {
+        parent::configure();
+
+        $this->addOption('strict', mode: InputOption::VALUE_OPTIONAL, default: false);
+    }
+
     #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Starting white image background detection..');
+        $io->title('Starting valid image background detection..');
 
-        // $this->analyzeValidImages($output, $io);
+        $this->strictMode = $input->getOption('strict') !== false;
+        $this->analyzeImage->setStrictMode($this->strictMode);
+
+        $this->analyzeValidImages($output, $io);
         $this->analyzeInvalidImages($output, $io);
 
         return Command::SUCCESS;
@@ -77,19 +90,19 @@ class WhiteBackgroundDetector extends Command
 
         if (count($falsePositives) === 0) {
             $io->success(sprintf(
-                'Analyze completed in %s seconds.All images with white background passed the validation',
+                'Analyze completed in %s seconds. All images with white background passed the validation',
                 number_format($elapsedTime, 3),
             ));
         } else {
-            foreach ($falsePositives as $falsePositive) {
-                $io->error(sprintf('Image %s detected as false positive', $falsePositive));
-            }
-
             $io->error(sprintf(
                 'Analyze completed in %s seconds. %s detected as false positive',
                 number_format($elapsedTime, 3),
                 count($falsePositives),
             ));
+        }
+
+        if ($output->isVerbose()) {
+            $io->error(array_map(fn (string $falsePositive) => sprintf('Image %s detected as false positive', $falsePositive), $falsePositives));
         }
     }
 
@@ -107,9 +120,7 @@ class WhiteBackgroundDetector extends Command
             $progressBar->display();
             $progressBar->advance();
 
-            $hasWhiteBackground = $this->analyzeImage->execute($image);
-
-            if (true === $hasWhiteBackground) {
+            if (false === $this->analyzeImage->execute($image)) {
                 $falseNegatives[] = $image;
             }
         }
@@ -120,23 +131,16 @@ class WhiteBackgroundDetector extends Command
 
         $elapsedTime = microtime(true) - $startTime;
 
-        if (count($falseNegatives) === 0) {
-            $io->success(sprintf(
-                'Analyze completed in %s seconds. All images without white background were rejected',
-                number_format($elapsedTime, 3),
-            ));
-        } else {
-            foreach ($falseNegatives as $falseNegative) {
-                $io->warning(sprintf('Image %s detected as false negative', $falseNegative));
-            }
-
-            $io->error(sprintf(
-                'Analyze completed in %s seconds. %s detected as false negative. Rejection rate: %s',
-                number_format($elapsedTime, 3),
-                count($falseNegatives),
-                count($falseNegatives)/count($invalidImages) * 100,
-            ));
+        if ($output->isVerbose()) {
+            $io->warning(array_map(fn (string $falseNegative) => sprintf('Image %s detected as false positive', $falseNegative), $falseNegatives));
         }
+
+        $io->error(sprintf(
+            'Analyze completed in %s seconds. %s detected as false negative. Rejection rate: %s',
+            number_format($elapsedTime, 3),
+            count($falseNegatives),
+            (count($invalidImages) - count($falseNegatives)) / count($invalidImages) * 100,
+        ));
     }
 
     private function getFilesInDirectory(string $directory): array

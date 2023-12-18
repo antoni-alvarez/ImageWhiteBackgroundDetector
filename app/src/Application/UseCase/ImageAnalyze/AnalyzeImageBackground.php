@@ -20,15 +20,21 @@ use function sprintf;
 
 class AnalyzeImageBackground
 {
-    private const int NUM_POINTS = 5000;
+    private const int NUM_POINTS = 8000;
     private const int BORDER_TOP = 1;
     private const int BORDER_BOTTOM = 2;
     private const int BORDER_LEFT = 3;
     private const int BORDER_RIGHT = 4;
-    private const int WHITE_THRESHOLD = 220;
+    private const int WHITE_VALUE = 255;
+    private const int WHITE_LIKE_MIN_VALUE = 220;
     private const int ALPHA_VALUE = 127;
-    private const float MIN_BACKGROUND_THRESHOLD = 0.5;
+    private const float MIN_WHITE_PERCENTAGE = 0.9;
+    /**
+     * Google recommendation:
+     * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image."
+     */
     private const float BORDER_PERCENTAGE = 0.1;
+    private bool $strictMode = false;
 
     public function __construct(
         private readonly Randomizer $randomizer,
@@ -36,12 +42,11 @@ class AnalyzeImageBackground
 
     public function execute(string $imagePath): bool
     {
-        $file = file_get_contents($imagePath);
-
         try {
+            $file = file_get_contents($imagePath);
             $image = imagecreatefromstring($file);
         } catch (Exception) {
-            throw new Exception(sprintf('Critical error reading image %s', $oldImagePath));
+            throw new Exception(sprintf('Critical error reading image %s', $imagePath));
         }
 
         if ($image === false) {
@@ -67,35 +72,13 @@ class AnalyzeImageBackground
         $transparentPoints = 0;
 
         for ($i = 0; $i < self::NUM_POINTS; $i++) {
-            $border = $this->randomizer->getInt(self::BORDER_TOP, self::BORDER_RIGHT);
+            $pixelColor = $this->getRandomBorderPixelColor($width, $borderHeight, $height, $borderWidth, $image);
 
-            switch ($border) {
-                case self::BORDER_TOP:
-                    $x = $this->randomizer->getInt(0, $width - 1);
-                    $y = $this->randomizer->getInt(0, (int) $borderHeight - 1);
-                    break;
-                case self::BORDER_BOTTOM:
-                    $x = $this->randomizer->getInt(0, $width - 1);
-                    $y = $this->randomizer->getInt((int) ($height - $borderHeight), $height - 1);
-                    break;
-                case self::BORDER_LEFT:
-                    $x = $this->randomizer->getInt(0, (int) $borderWidth - 1);
-                    $y = $this->randomizer->getInt(0, $height - 1);
-                    break;
-                case self::BORDER_RIGHT:
-                    $x = $this->randomizer->getInt((int) ($width - $borderWidth), $width - 1);
-                    $y = $this->randomizer->getInt(0, $height - 1);
-                    break;
-            }
-
-            $color = imagecolorat($image, $x, $y);
-            $rgb = imagecolorsforindex($image, $color);
-
-            if ($rgb['red'] > self::WHITE_THRESHOLD && $rgb['green'] > self::WHITE_THRESHOLD && $rgb['blue'] > self::WHITE_THRESHOLD) {
+            if ($this->isWhitePixel($pixelColor)) {
                 $whitePoints++;
             }
 
-            if ($rgb['alpha'] === self::ALPHA_VALUE) {
+            if ($this->isTransparentPixel($pixelColor)) {
                 $transparentPoints++;
             }
         }
@@ -103,6 +86,74 @@ class AnalyzeImageBackground
         $whitePointsRatio = $whitePoints / self::NUM_POINTS;
         $transparentRatio = $transparentPoints / self::NUM_POINTS;
 
-        return $whitePointsRatio >= self::MIN_BACKGROUND_THRESHOLD || $transparentRatio >= self::MIN_BACKGROUND_THRESHOLD;
+        return $whitePointsRatio >= self::MIN_WHITE_PERCENTAGE || $transparentRatio >= self::MIN_WHITE_PERCENTAGE;
+    }
+
+    public function setStrictMode(bool $strictMode): void
+    {
+        $this->strictMode = $strictMode;
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function getRandomBorderPixelColor(int $width, int $borderHeight, int $height, int $borderWidth, GdImage $image): array
+    {
+        $border = $this->randomizer->getInt(self::BORDER_TOP, self::BORDER_RIGHT);
+
+        switch ($border) {
+            case self::BORDER_TOP:
+                $x = $this->randomizer->getInt(0, $width - 1);
+                $y = $this->randomizer->getInt(0, $borderHeight - 1);
+                break;
+            case self::BORDER_BOTTOM:
+                $x = $this->randomizer->getInt(0, $width - 1);
+                $y = $this->randomizer->getInt($height - $borderHeight, $height - 1);
+                break;
+            case self::BORDER_LEFT:
+                $x = $this->randomizer->getInt(0, $borderWidth - 1);
+                $y = $this->randomizer->getInt(0, $height - 1);
+                break;
+            case self::BORDER_RIGHT:
+                $x = $this->randomizer->getInt($width - $borderWidth, $width - 1);
+                $y = $this->randomizer->getInt(0, $height - 1);
+                break;
+        }
+
+        $color = imagecolorat($image, $x, $y);
+
+        return imagecolorsforindex($image, $color);
+    }
+
+    /**
+     * @param array<string, int> $pixelColor
+     */
+    private function isWhitePixel(array $pixelColor): bool
+    {
+        return $this->strictMode ? $this->isPureWhitePixel($pixelColor) : $this->isWhiteLikePixel($pixelColor);
+    }
+
+    /**
+     * @param array<string, int> $pixelColor
+     */
+    private function isTransparentPixel(array $pixelColor): bool
+    {
+        return $pixelColor['alpha'] === self::ALPHA_VALUE;
+    }
+
+    /**
+     * @param array<string, int> $pixelColor
+     */
+    private function isPureWhitePixel(array $pixelColor): bool
+    {
+        return $pixelColor['red'] === self::WHITE_VALUE && $pixelColor['green'] === self::WHITE_VALUE && $pixelColor['blue'] === self::WHITE_VALUE;
+    }
+
+    /**
+     * @param array<string, int> $pixelColor
+     */
+    private function isWhiteLikePixel(array $pixelColor): bool
+    {
+        return $pixelColor['red'] > self::WHITE_LIKE_MIN_VALUE && $pixelColor['green'] > self::WHITE_LIKE_MIN_VALUE && $pixelColor['blue'] > self::WHITE_LIKE_MIN_VALUE;
     }
 }
