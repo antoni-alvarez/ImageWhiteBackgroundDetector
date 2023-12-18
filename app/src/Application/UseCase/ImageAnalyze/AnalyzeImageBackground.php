@@ -8,6 +8,7 @@ use Exception;
 use GdImage;
 use Random\Randomizer;
 
+use Symfony\Component\Filesystem\Exception\IOException;
 use function file_get_contents;
 use function imagecolorat;
 use function imagecolorsforindex;
@@ -38,19 +39,26 @@ class AnalyzeImageBackground
 
     public function __construct(
         private readonly Randomizer $randomizer,
-    ) {}
+    )
+    {
+    }
 
     public function execute(string $imagePath): bool
     {
+        $file = file_get_contents($imagePath);
+
+        if ($file === false) {
+            throw new IOException(sprintf('Error opening file %s', $imagePath));
+        }
+
         try {
-            $file = file_get_contents($imagePath);
             $image = imagecreatefromstring($file);
         } catch (Exception) {
-            throw new Exception(sprintf('Critical error reading image %s', $imagePath));
+            throw new IOException(sprintf('Critical error reading image %s', $imagePath));
         }
 
         if ($image === false) {
-            throw new Exception(sprintf('Error opening image %s', $imagePath));
+            throw new IOException(sprintf('Error opening image %s', $imagePath));
         }
 
         $hasWhiteBackground = $this->detectWhiteBackground($image);
@@ -65,8 +73,8 @@ class AnalyzeImageBackground
         $width = imagesx($image);
         $height = imagesy($image);
 
-        $borderWidth = max(1, (int) ($width * self::BORDER_PERCENTAGE));
-        $borderHeight = max(1, (int) ($height * self::BORDER_PERCENTAGE));
+        $borderWidth = max(1, (int)($width * self::BORDER_PERCENTAGE));
+        $borderHeight = max(1, (int)($height * self::BORDER_PERCENTAGE));
 
         $whitePoints = 0;
         $transparentPoints = 0;
@@ -115,12 +123,16 @@ class AnalyzeImageBackground
                 $y = $this->randomizer->getInt(0, $height - 1);
                 break;
             case self::BORDER_RIGHT:
+            default:
                 $x = $this->randomizer->getInt($width - $borderWidth, $width - 1);
                 $y = $this->randomizer->getInt(0, $height - 1);
-                break;
         }
 
         $color = imagecolorat($image, $x, $y);
+
+        if ($color === false) {
+            throw new IOException(sprintf('Error reading color info at %s:%s', $x, $y));
+        }
 
         return imagecolorsforindex($image, $color);
     }

@@ -8,6 +8,7 @@ use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 
+use Symfony\Component\Filesystem\Exception\IOException;
 use function file_exists;
 use function file_get_contents;
 use function getimagesize;
@@ -29,6 +30,10 @@ class FixImageFormat
     public function execute(string $oldImagePath): bool
     {
         $file = file_get_contents($oldImagePath);
+
+        if ($file === false) {
+            throw new IOException(sprintf('Error opening file %s', $oldImagePath));
+        }
 
         try {
             $image = imagecreatefromstring($file);
@@ -53,7 +58,7 @@ class FixImageFormat
         return $oldImagePath !== $newImagePath;
     }
 
-    private function getFixedImageName($imagePath): string
+    private function getFixedImageName(string $imagePath): string
     {
         if (!file_exists($imagePath)) {
             throw new InvalidArgumentException(sprintf('The image does not exist at the specified path: %s', $imagePath));
