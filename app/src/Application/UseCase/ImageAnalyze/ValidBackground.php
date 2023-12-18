@@ -26,17 +26,17 @@ class ValidBackground
     private const int BORDER_RIGHT = 4;
 
     private const int WHITE_VALUE = 255;
-    private const int WHITE_LIKE_MIN_VALUE = 220;
+    private const int WHITE_LIKE_MIN_VALUE = 230;
     private const int ALPHA_VALUE = 127;
 
-    private const int NUM_POINTS = 8000;
-    private const float MIN_VALID_PERCENTAGE = 0.9;
+    private const int NUM_POINTS = 10000;
+    private const float MIN_VALID_PERCENTAGE = 0.5;
 
     /**
-     * Google recommendation:
+     * Google recommendation: 0.1 to 0.25
      * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image."
      */
-    private const float BORDER_SIZE = 0.1;
+    private const float BORDER_SIZE = 0.05;
 
     private bool $strictMode = false;
 
