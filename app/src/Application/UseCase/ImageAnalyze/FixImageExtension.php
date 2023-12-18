@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use LogicException;
 use Symfony\Component\Filesystem\Exception\IOException;
 
+use function dirname;
 use function file_exists;
 use function getimagesize;
 use function pathinfo;
@@ -18,16 +19,15 @@ use const DIRECTORY_SEPARATOR;
 use const IMAGETYPE_JPEG;
 use const IMAGETYPE_PNG;
 use const IMAGETYPE_WEBP;
-use const PATHINFO_DIRNAME;
 use const PATHINFO_FILENAME;
 
-class FixImageFormat
+class FixImageExtension
 {
     public function execute(string $oldImagePath): bool
     {
         $newImageName = $this->getFixedImageName($oldImagePath);
 
-        $newImagePath = pathinfo($oldImagePath, PATHINFO_DIRNAME) . $newImageName;
+        $newImagePath = dirname($oldImagePath) . $newImageName;
 
         if (false === rename($oldImagePath, $newImagePath)) {
             throw new IOException(sprintf('Error changing file extension for image %s', $oldImagePath));

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Adapter\Framework\Command;
 
-use App\Application\UseCase\ImageAnalyze\FixImageFormat;
+use App\Application\UseCase\ImageAnalyze\FixImageExtension;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -22,12 +22,12 @@ use function sprintf;
 
 #[AsCommand(
     name: 'image:fix-format',
-    description: 'Fix image file format.',
+    description: 'Fix image file extension.',
 )]
-class FileFormatFixer extends Command
+class FileExtensionFixer extends Command
 {
     public function __construct(
-        private readonly FixImageFormat $fixImageFormat,
+        private readonly FixImageExtension $fixImageFormat,
         private readonly KernelInterface $kernel,
     ) {
         parent::__construct();
