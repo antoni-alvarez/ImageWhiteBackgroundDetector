@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Application\UseCase\ImageAnalyze;
 
 use InvalidArgumentException;
-use RuntimeException;
+use LogicException;
+use Symfony\Component\Filesystem\Exception\IOException;
 
 use function file_exists;
 use function getimagesize;
@@ -29,7 +30,7 @@ class FixImageFormat
         $newImagePath = pathinfo($oldImagePath, PATHINFO_DIRNAME) . $newImageName;
 
         if (false === rename($oldImagePath, $newImagePath)) {
-            throw new RuntimeException(sprintf('Error changing file extension for image %s', $oldImagePath));
+            throw new IOException(sprintf('Error changing file extension for image %s', $oldImagePath));
         }
 
         return $oldImagePath !== $newImagePath;
@@ -44,7 +45,7 @@ class FixImageFormat
         $info = getimagesize($imagePath);
 
         if ($info === false) {
-            throw new RuntimeException(sprintf('The image at path %s is not valid.', $imagePath));
+            throw new IOException(sprintf('The image at path %s is not valid.', $imagePath));
         }
 
         $newFileName = pathinfo($imagePath, PATHINFO_FILENAME);
@@ -53,7 +54,7 @@ class FixImageFormat
             IMAGETYPE_JPEG => '.jpg',
             IMAGETYPE_WEBP => '.webp',
             IMAGETYPE_PNG => '.png',
-            default => throw new RuntimeException(sprintf('Unsupported image format at path %s', $imagePath)),
+            default => throw new LogicException(sprintf('Unsupported image format at path %s', $imagePath)),
         };
 
         return DIRECTORY_SEPARATOR . $newFileName;
