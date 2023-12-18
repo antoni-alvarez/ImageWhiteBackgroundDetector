@@ -143,6 +143,9 @@ class WhiteBackgroundDetector extends Command
         ));
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function getFilesInDirectory(string $directory): array
     {
         $finder = new Finder();
@@ -157,6 +160,9 @@ class WhiteBackgroundDetector extends Command
         return $files;
     }
 
+    /**
+     * @param array<int, string> $validImages
+     */
     private function getProgressBar(OutputInterface $output, array $validImages): ProgressBar
     {
         $progressBar = new ProgressBar($output, count($validImages));

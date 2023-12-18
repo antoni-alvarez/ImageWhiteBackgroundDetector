@@ -79,6 +79,9 @@ class FileFormatFixer extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function getFilesInDirectory(string $directory): array
     {
         $finder = new Finder();
