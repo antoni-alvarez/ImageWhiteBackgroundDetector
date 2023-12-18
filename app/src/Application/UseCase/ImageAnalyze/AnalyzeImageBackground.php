@@ -7,13 +7,12 @@ namespace App\Application\UseCase\ImageAnalyze;
 use Exception;
 use GdImage;
 use Random\Randomizer;
-
 use Symfony\Component\Filesystem\Exception\IOException;
+
 use function file_get_contents;
 use function imagecolorat;
 use function imagecolorsforindex;
 use function imagecreatefromstring;
-use function imagedestroy;
 use function imagesx;
 use function imagesy;
 use function max;
@@ -21,60 +20,44 @@ use function sprintf;
 
 class AnalyzeImageBackground
 {
-    private const int NUM_POINTS = 8000;
     private const int BORDER_TOP = 1;
     private const int BORDER_BOTTOM = 2;
     private const int BORDER_LEFT = 3;
     private const int BORDER_RIGHT = 4;
+
     private const int WHITE_VALUE = 255;
     private const int WHITE_LIKE_MIN_VALUE = 220;
     private const int ALPHA_VALUE = 127;
-    private const float MIN_WHITE_PERCENTAGE = 0.9;
+
+    private const int NUM_POINTS = 8000;
+    private const float MIN_VALID_PERCENTAGE = 0.9;
+
     /**
      * Google recommendation:
      * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image."
      */
-    private const float BORDER_PERCENTAGE = 0.1;
+    private const float BORDER_SIZE = 0.1;
+
     private bool $strictMode = false;
 
     public function __construct(
         private readonly Randomizer $randomizer,
-    )
-    {
-    }
+    ) {}
 
     public function execute(string $imagePath): bool
     {
-        $file = file_get_contents($imagePath);
+        $image = $this->loadImage($imagePath);
 
-        if ($file === false) {
-            throw new IOException(sprintf('Error opening file %s', $imagePath));
-        }
-
-        try {
-            $image = imagecreatefromstring($file);
-        } catch (Exception) {
-            throw new IOException(sprintf('Critical error reading image %s', $imagePath));
-        }
-
-        if ($image === false) {
-            throw new IOException(sprintf('Error opening image %s', $imagePath));
-        }
-
-        $hasWhiteBackground = $this->detectWhiteBackground($image);
-
-        imagedestroy($image);
-
-        return $hasWhiteBackground;
+        return $this->hasValidBackground($image);
     }
 
-    public function detectWhiteBackground(GdImage $image): bool
+    public function hasValidBackground(GdImage $image): bool
     {
         $width = imagesx($image);
         $height = imagesy($image);
 
-        $borderWidth = max(1, (int)($width * self::BORDER_PERCENTAGE));
-        $borderHeight = max(1, (int)($height * self::BORDER_PERCENTAGE));
+        $borderWidth = max(1, (int) ($width * self::BORDER_SIZE));
+        $borderHeight = max(1, (int) ($height * self::BORDER_SIZE));
 
         $whitePoints = 0;
         $transparentPoints = 0;
@@ -91,10 +74,10 @@ class AnalyzeImageBackground
             }
         }
 
-        $whitePointsRatio = $whitePoints / self::NUM_POINTS;
-        $transparentRatio = $transparentPoints / self::NUM_POINTS;
+        $hasWhiteBackground = $whitePoints / self::NUM_POINTS >= self::MIN_VALID_PERCENTAGE;
+        $hasTransparentBackground = $transparentPoints / self::NUM_POINTS >= self::MIN_VALID_PERCENTAGE;
 
-        return $whitePointsRatio >= self::MIN_WHITE_PERCENTAGE || $transparentRatio >= self::MIN_WHITE_PERCENTAGE;
+        return $hasWhiteBackground  || $hasTransparentBackground;
     }
 
     public function setStrictMode(bool $strictMode): void
@@ -167,5 +150,26 @@ class AnalyzeImageBackground
     private function isWhiteLikePixel(array $pixelColor): bool
     {
         return $pixelColor['red'] > self::WHITE_LIKE_MIN_VALUE && $pixelColor['green'] > self::WHITE_LIKE_MIN_VALUE && $pixelColor['blue'] > self::WHITE_LIKE_MIN_VALUE;
+    }
+
+    private function loadImage(string $imagePath): GdImage
+    {
+        $file = file_get_contents($imagePath);
+
+        if ($file === false) {
+            throw new IOException(sprintf('Error opening file %s', $imagePath));
+        }
+
+        try {
+            $image = imagecreatefromstring($file);
+        } catch (Exception) {
+            throw new IOException(sprintf('Critical error reading image %s', $imagePath));
+        }
+
+        if ($image === false) {
+            throw new IOException(sprintf('Error opening image %s', $imagePath));
+        }
+
+        return $image;
     }
 }
