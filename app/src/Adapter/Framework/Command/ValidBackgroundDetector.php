@@ -48,6 +48,8 @@ class ValidBackgroundDetector extends Command
     {
         parent::configure();
 
+        $this->addOption('valid', mode: InputOption::VALUE_NONE);
+        $this->addOption('invalid', mode: InputOption::VALUE_NONE);
         $this->addOption('strict', mode: InputOption::VALUE_OPTIONAL, default: false);
     }
 
@@ -58,10 +60,19 @@ class ValidBackgroundDetector extends Command
         $io->title('Starting valid image background detection..');
 
         $strictMode = $input->getOption('strict') !== false;
+        $valid = $input->getOption('valid');
+        $invalid = $input->getOption('invalid');
+        $both = !$valid && !$invalid;
+
         $this->validBackground->setStrictMode($strictMode);
 
-        $this->analyzeValidImages($output, $io);
-        $this->analyzeInvalidImages($output, $io);
+        if ($valid || $both) {
+            $this->analyzeValidImages($output, $io);
+        }
+
+        if ($invalid || $both) {
+            $this->analyzeInvalidImages($output, $io);
+        }
 
         return Command::SUCCESS;
     }
