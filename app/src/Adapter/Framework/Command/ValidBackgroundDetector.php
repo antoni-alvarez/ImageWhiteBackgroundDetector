@@ -79,10 +79,7 @@ class ValidBackgroundDetector extends Command
 
     private function analyzeValidImages(OutputInterface $output, SymfonyStyle $io): void
     {
-        $validImagePath = sprintf('%s%s', $this->kernel->getProjectDir(), self::VALID_IMAGES_PATH);
-        $failedValidImagePath = sprintf('%s%s', $validImagePath, '/failed');
-        $this->filesystem->remove($failedValidImagePath);
-        $validImages = $this->getFilesInDirectory($validImagePath);
+        $validImages = $this->getFilesInDirectory(self::VALID_IMAGES_PATH);
 
         $progressBar = $this->getProgressBar($output, $validImages);
 
@@ -129,10 +126,7 @@ class ValidBackgroundDetector extends Command
 
     private function analyzeInvalidImages(OutputInterface $output, SymfonyStyle $io): void
     {
-        $invalidImagePath = sprintf('%s%s', $this->kernel->getProjectDir(), self::INVALID_IMAGES_PATH);
-        $failedInvalidImagePath = sprintf('%s%s', $invalidImagePath, '/failed');
-        $this->filesystem->remove($failedInvalidImagePath);
-        $invalidImages = $this->getFilesInDirectory($invalidImagePath);
+        $invalidImages = $this->getFilesInDirectory(self::INVALID_IMAGES_PATH);
 
         $progressBar = $this->getProgressBar($output, $invalidImages);
 
@@ -179,7 +173,7 @@ class ValidBackgroundDetector extends Command
             $imageName = pathinfo($image, PATHINFO_BASENAME);
             $destination = sprintf('%s/%s', $failedDirectory, $imageName);
 
-            $this->filesystem->mkdir($failedDirectory, 0o755);
+            $this->filesystem->mkdir($failedDirectory);
             $this->filesystem->copy($image, $destination);
         }
     }
@@ -189,8 +183,12 @@ class ValidBackgroundDetector extends Command
      */
     private function getFilesInDirectory(string $directory): array
     {
+        $fullPath = sprintf('%s%s', $this->kernel->getProjectDir(), $directory);
+        $failedPath = sprintf('%s%s', $fullPath, '/failed');
+        $this->filesystem->remove($failedPath);
+
         $finder = new Finder();
-        $finder->files()->in($directory);
+        $finder->files()->in($fullPath);
 
         $files = [];
 
