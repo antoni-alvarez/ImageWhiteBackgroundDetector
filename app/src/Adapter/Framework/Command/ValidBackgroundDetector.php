@@ -138,7 +138,7 @@ class ValidBackgroundDetector extends Command
             $progressBar->display();
             $progressBar->advance();
 
-            if (false === $this->validBackground->execute($image)) {
+            if (true === $this->validBackground->execute($image)) {
                 $falseNegatives[] = $image;
             }
         }
