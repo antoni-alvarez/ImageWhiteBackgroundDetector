@@ -17,6 +17,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\KernelInterface;
 
+use function array_diff;
 use function array_map;
 use function count;
 use function dirname;
@@ -104,7 +105,7 @@ class ValidBackgroundDetector extends Command
 
         $elapsedTime = microtime(true) - $startTime;
 
-        $this->copyFailedImages($falsePositives);
+        $this->copyFailedImages($validImages, $falsePositives);
 
         if ($output->isVerbose()) {
             $io->error(array_map(fn (string $falsePositive) => sprintf('Image %s detected as false positive', $falsePositive), $falsePositives));
@@ -149,7 +150,7 @@ class ValidBackgroundDetector extends Command
 
         $elapsedTime = microtime(true) - $startTime;
 
-        $this->copyFailedImages($falseNegatives);
+        $this->copyFailedImages($invalidImages, $falseNegatives);
 
         if ($output->isVerbose()) {
             $io->warning(array_map(fn (string $falseNegative) => sprintf('Image %s detected as false positive', $falseNegative), $falseNegatives));
@@ -166,7 +167,7 @@ class ValidBackgroundDetector extends Command
     /**
      * @param array<int, string> $failedImages
      */
-    private function copyFailedImages(array $failedImages): void
+    private function copyFailedImages(array $allImages, array $failedImages): void
     {
         foreach ($failedImages as $image) {
             $failedDirectory = sprintf('%s/failed', dirname($image));
@@ -174,6 +175,17 @@ class ValidBackgroundDetector extends Command
             $destination = sprintf('%s/%s', $failedDirectory, $imageName);
 
             $this->filesystem->mkdir($failedDirectory);
+            $this->filesystem->copy($image, $destination);
+        }
+
+        $successImages = array_diff($allImages, $failedImages);
+
+        foreach ($successImages as $image) {
+            $successDirectory = sprintf('%s/success', dirname($image));
+            $imageName = pathinfo($image, PATHINFO_BASENAME);
+            $destination = sprintf('%s/%s', $successDirectory, $imageName);
+
+            $this->filesystem->mkdir($successDirectory);
             $this->filesystem->copy($image, $destination);
         }
     }
@@ -184,8 +196,12 @@ class ValidBackgroundDetector extends Command
     private function getFilesInDirectory(string $directory): array
     {
         $fullPath = sprintf('%s%s', $this->kernel->getProjectDir(), $directory);
+
         $failedPath = sprintf('%s%s', $fullPath, '/failed');
+        $successPath = sprintf('%s%s', $fullPath, '/success');
+
         $this->filesystem->remove($failedPath);
+        $this->filesystem->remove($successPath);
 
         $finder = new Finder();
         $finder->files()->in($fullPath);
