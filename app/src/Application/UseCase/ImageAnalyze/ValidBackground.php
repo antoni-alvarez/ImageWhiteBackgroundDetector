@@ -30,13 +30,14 @@ class ValidBackground
     private const int ALPHA_VALUE = 127;
 
     private const int NUM_POINTS = 10000;
-    private const float MIN_VALID_PERCENTAGE = 0.5;
+    private const float MIN_VALID_PERCENTAGE = 0.6;
 
     /**
      * Google recommendation: 0.1 to 0.25
-     * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image."
+     * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image.".
      */
-    private const float BORDER_SIZE = 0.05;
+    private const float BORDER_SIZE = 0.01;
+    private const int MAX_DISTANCE = 5;
 
     private bool $strictMode = false;
 
@@ -137,19 +138,41 @@ class ValidBackground
     }
 
     /**
-     * @param array<string, int> $pixelColor
+     * @param array<string, int> $rgb
      */
-    private function isPureWhitePixel(array $pixelColor): bool
+    private function isPureWhitePixel(array $rgb): bool
     {
-        return $pixelColor['red'] === self::WHITE_VALUE && $pixelColor['green'] === self::WHITE_VALUE && $pixelColor['blue'] === self::WHITE_VALUE;
+        return $rgb['red'] === self::WHITE_VALUE && $rgb['green'] === self::WHITE_VALUE && $rgb['blue'] === self::WHITE_VALUE;
     }
 
     /**
-     * @param array<string, int> $pixelColor
+     * @param array<string, int> $rgb
      */
-    private function isWhiteLikePixel(array $pixelColor): bool
+    private function isWhiteLikePixel(array $rgb): bool
     {
-        return $pixelColor['red'] > self::WHITE_LIKE_MIN_VALUE && $pixelColor['green'] > self::WHITE_LIKE_MIN_VALUE && $pixelColor['blue'] > self::WHITE_LIKE_MIN_VALUE;
+        if ($this->isPureWhitePixel($rgb)) {
+            return true;
+        }
+
+        if ($rgb['red'] < self::WHITE_LIKE_MIN_VALUE ||
+            $rgb['green'] < self::WHITE_LIKE_MIN_VALUE ||
+            $rgb['blue'] < self::WHITE_LIKE_MIN_VALUE) {
+            return false;
+        }
+
+        return $this->getMeanColorDistance($rgb) < self::MAX_DISTANCE;
+    }
+
+    /**
+     * @param array<string, int> $rgb
+     */
+    public function getMeanColorDistance(array $rgb): float
+    {
+        $distanceRB = abs($rgb['red'] - $rgb['blue']);
+        $distanceGR = abs($rgb['green'] - $rgb['red']);
+        $distanceBG = abs($rgb['blue'] - $rgb['green']);
+
+        return ($distanceRB + $distanceGR + $distanceBG) / 3;
     }
 
     private function loadImage(string $imagePath): GdImage
