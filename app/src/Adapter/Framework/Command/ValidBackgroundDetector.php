@@ -165,6 +165,7 @@ class ValidBackgroundDetector extends Command
     }
 
     /**
+     * @param array<int, string> $allImages
      * @param array<int, string> $failedImages
      */
     private function copyFailedImages(array $allImages, array $failedImages): void
