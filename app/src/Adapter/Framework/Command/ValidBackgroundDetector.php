@@ -65,20 +65,18 @@ class ValidBackgroundDetector extends Command
         $invalid = $input->getOption('invalid');
         $both = !$valid && !$invalid;
 
-        $this->validBackground->setStrictMode($strictMode);
-
         if ($valid || $both) {
-            $this->analyzeValidImages($output, $io);
+            $this->analyzeValidImages($output, $io, $strictMode);
         }
 
         if ($invalid || $both) {
-            $this->analyzeInvalidImages($output, $io);
+            $this->analyzeInvalidImages($output, $io, $strictMode);
         }
 
         return Command::SUCCESS;
     }
 
-    private function analyzeValidImages(OutputInterface $output, SymfonyStyle $io): void
+    private function analyzeValidImages(OutputInterface $output, SymfonyStyle $io, bool $strictMode): void
     {
         $validImages = $this->getFilesInDirectory(self::VALID_IMAGES_PATH);
 
@@ -92,7 +90,7 @@ class ValidBackgroundDetector extends Command
             $progressBar->display();
             $progressBar->advance();
 
-            $hasWhiteBackground = $this->validBackground->execute($image);
+            $hasWhiteBackground = $this->validBackground->execute($image, $strictMode);
 
             if (false === $hasWhiteBackground) {
                 $falsePositives[] = $image;
@@ -125,7 +123,7 @@ class ValidBackgroundDetector extends Command
         }
     }
 
-    private function analyzeInvalidImages(OutputInterface $output, SymfonyStyle $io): void
+    private function analyzeInvalidImages(OutputInterface $output, SymfonyStyle $io, bool $strictMode): void
     {
         $invalidImages = $this->getFilesInDirectory(self::INVALID_IMAGES_PATH);
 
@@ -139,7 +137,7 @@ class ValidBackgroundDetector extends Command
             $progressBar->display();
             $progressBar->advance();
 
-            if (true === $this->validBackground->execute($image)) {
+            if (true === $this->validBackground->execute($image, $strictMode)) {
                 $falseNegatives[] = $image;
             }
         }
