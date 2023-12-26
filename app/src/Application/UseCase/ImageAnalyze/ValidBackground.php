@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\ImageAnalyze;
 
+use App\Application\Service\ColorService;
 use Exception;
 use GdImage;
 use Random\Randomizer;
 use Symfony\Component\Filesystem\Exception\IOException;
 
-use function abs;
 use function file_get_contents;
 use function imagecolorat;
 use function imagecolorsforindex;
@@ -21,10 +21,6 @@ use function sprintf;
 
 class ValidBackground
 {
-    private const int WHITE_VALUE = 255;
-    private const int WHITE_LIKE_MIN_VALUE = 230;
-    private const int ALPHA_VALUE = 127;
-
     private const int NUM_POINTS = 2500;
     private const float MIN_BORDER_VALID_PERCENTAGE = 0.6;
     private const float MIN_SINGLE_BORDER_VALID_PERCENTAGE = 0.3;
@@ -34,11 +30,11 @@ class ValidBackground
      * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image.".
      */
     private const float BORDER_SIZE = 0.01;
-    private const int MAX_DISTANCE = 8;
 
     private bool $strictMode = false;
 
     public function __construct(
+        private readonly ColorService $colorService,
         private readonly Randomizer $randomizer,
     ) {}
 
@@ -70,11 +66,11 @@ class ValidBackground
         for ($i = 0; $i < self::NUM_POINTS; $i++) {
             $pixelColor = $this->getTopBorderRandomPixelColor($width, $borderWidth, $borderHeight, $image);
 
-            if ($this->isWhitePixel($pixelColor)) {
+            if ($this->colorService->isWhitePixel($pixelColor, $this->strictMode)) {
                 $topWhitePoints++;
             }
 
-            if ($this->isTransparentPixel($pixelColor)) {
+            if ($this->colorService->isTransparentPixel($pixelColor)) {
                 $topTransparentPoints++;
             }
         }
@@ -89,11 +85,11 @@ class ValidBackground
         for ($i = 0; $i < self::NUM_POINTS; $i++) {
             $pixelColor = $this->getRightBorderRandomPixelColor($width, $height, $borderWidth, $image);
 
-            if ($this->isWhitePixel($pixelColor)) {
+            if ($this->colorService->isWhitePixel($pixelColor)) {
                 $rightWhitePoints++;
             }
 
-            if ($this->isTransparentPixel($pixelColor)) {
+            if ($this->colorService->isTransparentPixel($pixelColor)) {
                 $rightTransparentPoints++;
             }
         }
@@ -108,11 +104,11 @@ class ValidBackground
         for ($i = 0; $i < self::NUM_POINTS; $i++) {
             $pixelColor = $this->getBottomBorderRandomPixelColor($width, $height, $borderWidth, $borderHeight, $image);
 
-            if ($this->isWhitePixel($pixelColor)) {
+            if ($this->colorService->isWhitePixel($pixelColor)) {
                 $bottomWhitePoints++;
             }
 
-            if ($this->isTransparentPixel($pixelColor)) {
+            if ($this->colorService->isTransparentPixel($pixelColor)) {
                 $bottomTransparentPoints++;
             }
         }
@@ -127,11 +123,11 @@ class ValidBackground
         for ($i = 0; $i < self::NUM_POINTS; $i++) {
             $pixelColor = $this->getLeftBorderRandomPixelColor($height, $borderWidth, $image);
 
-            if ($this->isWhitePixel($pixelColor)) {
+            if ($this->colorService->isWhitePixel($pixelColor)) {
                 $leftWhitePoints++;
             }
 
-            if ($this->isTransparentPixel($pixelColor)) {
+            if ($this->colorService->isTransparentPixel($pixelColor)) {
                 $leftTransparentPoints++;
             }
         }
@@ -155,18 +151,6 @@ class ValidBackground
     public function setStrictMode(bool $strictMode): void
     {
         $this->strictMode = $strictMode;
-    }
-
-    /**
-     * @param array<string, int> $rgb
-     */
-    public function getMeanColorDistance(array $rgb): float
-    {
-        $distanceRB = abs($rgb['red'] - $rgb['blue']);
-        $distanceGR = abs($rgb['green'] - $rgb['red']);
-        $distanceBG = abs($rgb['blue'] - $rgb['green']);
-
-        return ($distanceRB + $distanceGR + $distanceBG) / 3;
     }
 
     /**
@@ -235,48 +219,6 @@ class ValidBackground
         }
 
         return imagecolorsforindex($image, $color);
-    }
-
-    /**
-     * @param array<string, int> $pixelColor
-     */
-    private function isWhitePixel(array $pixelColor): bool
-    {
-        return $this->strictMode ? $this->isPureWhitePixel($pixelColor) : $this->isWhiteLikePixel($pixelColor);
-    }
-
-    /**
-     * @param array<string, int> $pixelColor
-     */
-    private function isTransparentPixel(array $pixelColor): bool
-    {
-        return $pixelColor['alpha'] === self::ALPHA_VALUE;
-    }
-
-    /**
-     * @param array<string, int> $rgb
-     */
-    private function isPureWhitePixel(array $rgb): bool
-    {
-        return $rgb['red'] === self::WHITE_VALUE && $rgb['green'] === self::WHITE_VALUE && $rgb['blue'] === self::WHITE_VALUE;
-    }
-
-    /**
-     * @param array<string, int> $rgb
-     */
-    private function isWhiteLikePixel(array $rgb): bool
-    {
-        if ($this->isPureWhitePixel($rgb)) {
-            return true;
-        }
-
-        if ($rgb['red'] < self::WHITE_LIKE_MIN_VALUE
-            || $rgb['green'] < self::WHITE_LIKE_MIN_VALUE
-            || $rgb['blue'] < self::WHITE_LIKE_MIN_VALUE) {
-            return false;
-        }
-
-        return $this->getMeanColorDistance($rgb) < self::MAX_DISTANCE;
     }
 
     private function loadImage(string $imagePath): GdImage
