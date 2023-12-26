@@ -49,14 +49,24 @@ class BorderAnalyzeService
         $this->borderHeight = max(1, (int) ($this->height * self::BORDER_SIZE));
     }
 
-    /**
-     * @param array{white: float, alpha: float} $topBorder
-     * @param array{white: float, alpha: float} $rightBorder
-     * @param array{white: float, alpha: float} $bottomBorder
-     * @param array{white: float, alpha: float} $leftBorder
-     */
-    public function isValidBorder(array $topBorder, array $rightBorder, array $bottomBorder, array $leftBorder): bool
+    public function isValidBorder(bool $strictMode = false): bool
     {
+        if (false === $topBorder = $this->analyzeBorder(BorderSide::TOP, $strictMode)) {
+            return false;
+        }
+
+        if (false === $rightBorder = $this->analyzeBorder(BorderSide::RIGHT, $strictMode)) {
+            return false;
+        }
+
+        if (false === $bottomBorder = $this->analyzeBorder(BorderSide::BOTTOM, $strictMode)) {
+            return false;
+        }
+
+        if (false === $leftBorder = $this->analyzeBorder(BorderSide::LEFT, $strictMode)) {
+            return false;
+        }
+
         $sumWhitePercentage = $topBorder['white'] + $rightBorder['white'] + $bottomBorder['white'] + $leftBorder['white'];
         $sumAlphaPercentage = $topBorder['alpha'] + $rightBorder['alpha'] + $bottomBorder['alpha'] + $leftBorder['alpha'];
 
@@ -69,7 +79,7 @@ class BorderAnalyzeService
     /**
      * @return false|array{white: float, alpha: float}
      */
-    public function analyzeBorder(BorderSide $border, bool $strictMode = false): array|false
+    private function analyzeBorder(BorderSide $border, bool $strictMode = false): array|false
     {
         $whitePoints = 0;
         $alphaPoints = 0;

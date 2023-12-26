@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Adapter\Framework\Command;
 
-use App\Application\UseCase\ImageAnalyze\ValidBackground;
+use App\Application\UseCase\ImageAnalyze\ValidateImageBackground;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -38,7 +38,7 @@ class ValidBackgroundDetector extends Command
     private const string INVALID_IMAGES_PATH = '/public/images/invalid';
 
     public function __construct(
-        private readonly ValidBackground $validBackground,
+        private readonly ValidateImageBackground $validBackground,
         private readonly KernelInterface $kernel,
         private readonly Filesystem $filesystem,
     ) {
