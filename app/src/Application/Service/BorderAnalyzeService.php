@@ -19,13 +19,6 @@ use function sprintf;
 class BorderAnalyzeService
 {
     private const int NUM_POINTS = 2500;
-    private const float MIN_BORDER_VALID_PERCENTAGE = 0.6;
-    private const float MIN_SINGLE_BORDER_VALID_PERCENTAGE = 0.3;
-    /**
-     * Google recommendation: 0.1 to 0.25
-     * "Frame your product in the image space so that it takes up no less than 75%, but not more than 90%, of the full image.".
-     */
-    private const float BORDER_SIZE = 0.01;
 
     private GdImage $image;
     private int $width;
@@ -41,29 +34,29 @@ class BorderAnalyzeService
     public function setImage(GdImage $image): void
     {
         $this->image = $image;
-
-        $this->width = imagesx($image);
-        $this->height = imagesy($image);
-
-        $this->borderWidth = max(1, (int) ($this->width * self::BORDER_SIZE));
-        $this->borderHeight = max(1, (int) ($this->height * self::BORDER_SIZE));
     }
 
-    public function isValidBorder(bool $strictMode = false): bool
-    {
-        if (false === $topBorder = $this->analyzeBorder(BorderSide::TOP, $strictMode)) {
+    public function isValidBorder(
+        float $borderSize,
+        float $minBorderPercentage,
+        float $minSingleBorderPercentage,
+        bool $strictMode = false,
+    ): bool {
+        $this->calculateBorders($borderSize);
+
+        if (false === $topBorder = $this->analyzeBorder(BorderSide::TOP, $minSingleBorderPercentage, $strictMode)) {
             return false;
         }
 
-        if (false === $rightBorder = $this->analyzeBorder(BorderSide::RIGHT, $strictMode)) {
+        if (false === $rightBorder = $this->analyzeBorder(BorderSide::RIGHT, $minSingleBorderPercentage, $strictMode)) {
             return false;
         }
 
-        if (false === $bottomBorder = $this->analyzeBorder(BorderSide::BOTTOM, $strictMode)) {
+        if (false === $bottomBorder = $this->analyzeBorder(BorderSide::BOTTOM, $minSingleBorderPercentage, $strictMode)) {
             return false;
         }
 
-        if (false === $leftBorder = $this->analyzeBorder(BorderSide::LEFT, $strictMode)) {
+        if (false === $leftBorder = $this->analyzeBorder(BorderSide::LEFT, $minSingleBorderPercentage, $strictMode)) {
             return false;
         }
 
@@ -73,13 +66,22 @@ class BorderAnalyzeService
         $meanWhitePercentage = $sumWhitePercentage / 4;
         $meanAlphaPercentage = $sumAlphaPercentage / 4;
 
-        return $meanWhitePercentage > self::MIN_BORDER_VALID_PERCENTAGE || $meanAlphaPercentage > self::MIN_BORDER_VALID_PERCENTAGE;
+        return $meanWhitePercentage > $minBorderPercentage || $meanAlphaPercentage > $minBorderPercentage;
+    }
+
+    private function calculateBorders(float $borderPercentage): void
+    {
+        $this->width = imagesx($this->image);
+        $this->height = imagesy($this->image);
+
+        $this->borderWidth = max(1, (int) ($this->width * $borderPercentage));
+        $this->borderHeight = max(1, (int) ($this->height * $borderPercentage));
     }
 
     /**
      * @return false|array{white: float, alpha: float}
      */
-    private function analyzeBorder(BorderSide $border, bool $strictMode = false): array|false
+    private function analyzeBorder(BorderSide $border, float $minSingleBorderPercentage, bool $strictMode = false): array|false
     {
         $whitePoints = 0;
         $alphaPoints = 0;
@@ -101,7 +103,7 @@ class BorderAnalyzeService
 
         $border = ['white' => $whitePercentage, 'alpha' => $alphaPercentage];
 
-        if (false === $this->isValidSingleBorder($border)) {
+        if (false === $this->isValidSingleBorder($border, $minSingleBorderPercentage)) {
             return false;
         }
 
@@ -111,9 +113,9 @@ class BorderAnalyzeService
     /**
      * @param array{white: float, alpha: float} $border
      */
-    private function isValidSingleBorder(array $border): bool
+    private function isValidSingleBorder(array $border, float $minSingleBorderPercentage): bool
     {
-        return $border['white'] >= self::MIN_SINGLE_BORDER_VALID_PERCENTAGE || $border['alpha'] >= self::MIN_SINGLE_BORDER_VALID_PERCENTAGE;
+        return $border['white'] >= $minSingleBorderPercentage || $border['alpha'] >= $minSingleBorderPercentage;
     }
 
     /**
