@@ -7,6 +7,12 @@ WORKDIR /var/www
 RUN apk --no-cache add curl \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# Install XDebug dependencies
+RUN apk --no-cache add $PHPIZE_DEPS linux-headers
+
+# Install XDebug
+RUN pecl install xdebug && docker-php-ext-enable xdebug
+
 # Install GD & dependencies
 RUN apk --no-cache add libpng libpng-dev libjpeg-turbo libjpeg-turbo-dev libwebp libwebp-dev \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
