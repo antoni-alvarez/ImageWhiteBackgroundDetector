@@ -1,11 +1,9 @@
 version: '3.8'
 services:
-  php:
-    container_name: php
+  background_detector:
+    container_name: background_detector
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "80:80"
     volumes:
       - ../app:/var/www

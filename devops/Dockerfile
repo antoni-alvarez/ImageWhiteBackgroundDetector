@@ -21,8 +21,5 @@ RUN apk --no-cache add libpng libpng-dev libjpeg-turbo libjpeg-turbo-dev libwebp
 # Set the memory limit in php.ini
 RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/docker-php-memlimit.ini
 
-# Expose port 80 for web server
-EXPOSE 80
-
-# Start the PHP built-in server
-CMD ["php", "-S", "0.0.0.0:80", "-t", "/var/www/public"]
+# Keep the container running
+CMD ["tail", "-f", "/dev/null"]
