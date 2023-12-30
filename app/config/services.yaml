@@ -7,3 +7,8 @@ services:
         resource: '../src/'
 
     Random\Randomizer: ~
+
+    Intervention\Image\Drivers\Gd\Driver: ~
+    Intervention\Image\ImageManager:
+        arguments:
+            $driver: '@Intervention\Image\Drivers\Gd\Driver'
