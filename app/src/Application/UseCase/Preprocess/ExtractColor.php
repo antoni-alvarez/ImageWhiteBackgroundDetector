@@ -9,24 +9,26 @@ use GdImage;
 use function imagecolorat;
 use function imagesx;
 use function imagesy;
+use function round;
 
 class ExtractColor
 {
     public function __construct() {}
 
     /**
-     * @return array<int, bool|int|float>
+     * @return array<int, float>
      */
-    public function execute(GdImage $image, bool $isValid): array
+    public function execute(GdImage $image): array
     {
-        $colorData = [$isValid];
+        $colorData = [];
 
         $imageWidth = imagesx($image);
         $imageHeight = imagesy($image);
 
         for ($x = 0; $x < $imageWidth; ++$x) {
             for ($y = 0; $y < $imageHeight; ++$y) {
-                $colorData[] = (imagecolorat($image, $x, $y) & 0xFF) / 255;
+                $colorValue = imagecolorat($image, $x, $y) & 0xFF;
+                $colorData[] = round($colorValue / 255, 3);
             }
         }
 

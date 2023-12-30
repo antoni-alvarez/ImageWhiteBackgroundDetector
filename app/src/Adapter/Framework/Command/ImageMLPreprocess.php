@@ -14,11 +14,15 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\KernelInterface;
 
+use function array_unshift;
 use function count;
+use function fopen;
+use function fputcsv;
 use function microtime;
 use function number_format;
 use function sprintf;
@@ -32,6 +36,7 @@ class ImageMLPreprocess extends Command
     public const string VALID_IMAGES = 'valid';
     public const string INVALID_IMAGES = 'invalid';
     private const string IMAGES_PATH = '/public/images/%s';
+    private const string DATA_PATH = '/public/data.csv';
 
     public function __construct(
         private readonly ImagePreprocess $imagePreprocess,
@@ -72,6 +77,8 @@ class ImageMLPreprocess extends Command
         $invalid = $input->getOption(self::INVALID_IMAGES);
         $both = !$valid && !$invalid;
 
+        $this->filesystem->remove($this->getDataFile());
+
         if ($valid || $both) {
             $this->preprocessImages($output, $io, self::VALID_IMAGES);
         }
@@ -95,13 +102,22 @@ class ImageMLPreprocess extends Command
 
         $startTime = microtime(true);
 
+        $csvFile = fopen($this->getDataFile(), 'a');
+
+        if (false === $csvFile) {
+            throw new IOException(sprintf('Error opening data file %s', $this->getDataFile()));
+        }
+
         foreach ($images as $image) {
             $progressBar->setMessage(sprintf('Processing %s image "%s"', $imagesType, $image), 'filename');
             $progressBar->display();
             $progressBar->advance();
 
             $processedImage = $this->imagePreprocess->execute($image);
-            $colorData = $this->extractColor->execute($processedImage, $imagesType === self::VALID_IMAGES);
+            $colorData = $this->extractColor->execute($processedImage);
+            array_unshift($colorData, $imagesType === self::VALID_IMAGES ? 1 : 0);
+
+            fputcsv($csvFile, $colorData);
         }
 
         $progressBar->finish();
@@ -151,5 +167,14 @@ class ImageMLPreprocess extends Command
         );
 
         return $progressBar;
+    }
+
+    private function getDataFile(): string
+    {
+        return sprintf(
+            '%s%s',
+            $this->kernel->getProjectDir(),
+            self::DATA_PATH,
+        );
     }
 }
