@@ -33,8 +33,14 @@ class ImagePreprocess
         $image = $this->imageManager->read($imagePath);
         $image->greyscale();
         $image->scale(width: 256);
+
+        if ($this->isAlphaImage($imagePath)) {
+            $image->reduceColors(256, '#ffffff');
+        }
+
         $image->contrast(10)->brightness(-10);
-        $image->toJpeg(100)->save($processedImagePath);
+        $image->toJpeg(100);
+        $image->save($processedImagePath);
     }
 
     private function getJpegImagePath(string $imagePath): string
@@ -59,5 +65,20 @@ class ImagePreprocess
             pathinfo($imagePath, PATHINFO_FILENAME),
             image_type_to_extension(IMAGETYPE_JPEG),
         );
+    }
+
+    private function isAlphaImage(string $imagePath): bool
+    {
+        if (!file_exists($imagePath)) {
+            throw new InvalidArgumentException(sprintf('The image does not exist at the specified path: %s', $imagePath));
+        }
+
+        $imageInfo = getimagesize($imagePath);
+
+        if ($imageInfo === false) {
+            throw new IOException(sprintf('The image at path %s is not valid.', $imagePath));
+        }
+
+        return $imageInfo[2] === IMAGETYPE_PNG || $imageInfo[2] === IMAGETYPE_WEBP;
     }
 }
