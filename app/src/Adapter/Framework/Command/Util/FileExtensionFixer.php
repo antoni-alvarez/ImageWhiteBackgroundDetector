@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Framework\Command;
+namespace App\Adapter\Framework\Command\Util;
 
-use App\Application\UseCase\ImageAnalyze\FixImageExtension;
+use App\Application\UseCase\Util\FixImageExtension;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

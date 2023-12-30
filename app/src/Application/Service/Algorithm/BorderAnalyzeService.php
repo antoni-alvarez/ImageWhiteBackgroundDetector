@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Service;
+namespace App\Application\Service\Algorithm;
 
 use App\Domain\Enum\BorderSide;
 use GdImage;

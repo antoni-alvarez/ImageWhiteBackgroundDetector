@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Framework\Command;
+namespace App\Adapter\Framework\Command\ML;
 
 use Generator;
 use Override;

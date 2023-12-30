@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Application\UseCase\ImageAnalyze;
+namespace App\Application\UseCase\Algorithm;
 
-use App\Application\Service\BorderAnalyzeService;
+use App\Application\Service\Algorithm\BorderAnalyzeService;
 use Exception;
 use GdImage;
 use Symfony\Component\Filesystem\Exception\IOException;

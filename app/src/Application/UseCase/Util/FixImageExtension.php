@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Application\UseCase\ImageAnalyze;
+namespace App\Application\UseCase\Util;
 
 use InvalidArgumentException;
 use LogicException;

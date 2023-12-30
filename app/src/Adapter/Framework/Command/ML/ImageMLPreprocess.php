@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Framework\Command;
+namespace App\Adapter\Framework\Command\ML;
 
-use App\Application\UseCase\Preprocess\ExtractColor;
-use App\Application\UseCase\Preprocess\ImagePreprocess;
+use App\Application\UseCase\MLPreprocess\ExtractColor;
+use App\Application\UseCase\MLPreprocess\ImagePreprocess;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

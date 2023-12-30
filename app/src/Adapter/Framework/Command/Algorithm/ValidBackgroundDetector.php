@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Framework\Command;
+namespace App\Adapter\Framework\Command\Algorithm;
 
-use App\Application\UseCase\ImageAnalyze\ValidateImageBackground;
+use App\Application\UseCase\Algorithm\ValidateImageBackground;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
