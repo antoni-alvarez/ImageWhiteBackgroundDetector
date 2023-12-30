@@ -19,6 +19,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\KernelInterface;
 
+use function array_slice;
 use function array_unshift;
 use function count;
 use function fopen;
@@ -33,6 +34,7 @@ use function sprintf;
 )]
 class ImageMLPreprocess extends Command
 {
+    public const string LIMIT = 'limit';
     public const string VALID_IMAGES = 'valid';
     public const string INVALID_IMAGES = 'invalid';
     private const string IMAGES_PATH = '/public/images/%s';
@@ -63,6 +65,7 @@ class ImageMLPreprocess extends Command
     {
         parent::configure();
 
+        $this->addOption(self::LIMIT, mode: InputOption::VALUE_OPTIONAL);
         $this->addOption(self::VALID_IMAGES, mode: InputOption::VALUE_NONE);
         $this->addOption(self::INVALID_IMAGES, mode: InputOption::VALUE_NONE);
     }
@@ -73,6 +76,8 @@ class ImageMLPreprocess extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Starting image preprocessing for ML background detector..');
 
+        /** @var string $limit */
+        $limit = $input->getOption(self::LIMIT);
         $valid = $input->getOption(self::VALID_IMAGES);
         $invalid = $input->getOption(self::INVALID_IMAGES);
         $both = !$valid && !$invalid;
@@ -80,23 +85,27 @@ class ImageMLPreprocess extends Command
         $this->filesystem->remove($this->getDataFile());
 
         if ($valid || $both) {
-            $this->preprocessImages($output, $io, self::VALID_IMAGES);
+            $this->preprocessImages($output, $io, self::VALID_IMAGES, (int) $limit);
         }
 
         if ($invalid || $both) {
-            $this->preprocessImages($output, $io, self::INVALID_IMAGES);
+            $this->preprocessImages($output, $io, self::INVALID_IMAGES, (int) $limit);
         }
 
         return Command::SUCCESS;
     }
 
-    private function preprocessImages(OutputInterface $output, SymfonyStyle $io, string $imagesType): void
+    private function preprocessImages(OutputInterface $output, SymfonyStyle $io, string $imagesType, int $limit): void
     {
         $imagesPath = sprintf(self::IMAGES_PATH, $imagesType);
 
         $this->removePreviousProcessedImages($imagesPath);
 
         $images = $this->getFilesInDirectory($imagesPath);
+
+        if ($limit > 0) {
+            $images = array_slice($images, 0, 50);
+        }
 
         $progressBar = $this->getProgressBar($output, $images);
 
