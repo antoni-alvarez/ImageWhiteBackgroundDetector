@@ -69,9 +69,11 @@ class TrainMLBackgroundDetector extends Command
         $predictedLabels = $classifier->predict($testingSet);
 
         $accuracy = Accuracy::score($predictedLabels, $actualLabels);
-        $confusionMatrix = ConfusionMatrix::compute($actualLabels, $predictedLabels);
 
-        $this->printConfusionMatrix($output, $confusionMatrix);
+        if ($output->isVerbose()) {
+            $confusionMatrix = ConfusionMatrix::compute($actualLabels, $predictedLabels);
+            $this->printConfusionMatrix($output, $confusionMatrix);
+        }
 
         $elapsedTime = microtime(true) - $startTime;
 
