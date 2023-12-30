@@ -14,6 +14,7 @@
         "ext-gd": "*",
         "ext-iconv": "*",
         "intervention/image": "^3.2",
+        "php-ai/php-ml": "^0.10.0",
         "symfony/console": "^6.4",
         "symfony/finder": "^6.4",
         "symfony/flex": "^2",

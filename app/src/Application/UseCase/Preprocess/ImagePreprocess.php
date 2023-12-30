@@ -35,7 +35,7 @@ class ImagePreprocess
 
         $image = $this->imageManager->read($imagePath);
         $image->greyscale();
-        $image->scale(width: 256);
+        $image->resize(256, 256);
 
         if ($this->isAlphaImage($imagePath)) {
             $image->reduceColors(256, '#ffffff');
