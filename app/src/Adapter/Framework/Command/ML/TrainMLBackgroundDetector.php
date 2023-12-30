@@ -71,11 +71,7 @@ class TrainMLBackgroundDetector extends Command
         $accuracy = Accuracy::score($predictedLabels, $actualLabels);
         $confusionMatrix = ConfusionMatrix::compute($actualLabels, $predictedLabels);
 
-        $output->writeln('Confusion Matrix:');
-        $output->writeln('---------------------');
-        $output->writeln(sprintf('| TP: %-3d | FP: %-3d |', $confusionMatrix[1][1], $confusionMatrix[1][0]));
-        $output->writeln(sprintf('| FN: %-3d | TN: %-3d |', $confusionMatrix[0][1], $confusionMatrix[0][0]));
-        $output->writeln(sprintf('---------------------%s', "\n"));
+        $this->printConfusionMatrix($output, $confusionMatrix);
 
         $elapsedTime = microtime(true) - $startTime;
 
@@ -119,5 +115,17 @@ class TrainMLBackgroundDetector extends Command
         }
 
         return new ArrayDataset($samples, $labels);
+    }
+
+    /**
+     * @param array<int, array<int, int>> $confusionMatrix
+     */
+    private function printConfusionMatrix(OutputInterface $output, array $confusionMatrix): void
+    {
+        $output->writeln('Confusion Matrix:');
+        $output->writeln('---------------------');
+        $output->writeln(sprintf('| TP: %-3d | FP: %-3d |', $confusionMatrix[1][1], $confusionMatrix[1][0]));
+        $output->writeln(sprintf('| FN: %-3d | TN: %-3d |', $confusionMatrix[0][1], $confusionMatrix[0][0]));
+        $output->writeln(sprintf('---------------------%s', "\n"));
     }
 }
