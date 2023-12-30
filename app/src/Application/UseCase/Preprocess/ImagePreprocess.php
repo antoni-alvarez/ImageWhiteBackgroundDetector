@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\Preprocess;
 
+use GdImage;
 use Intervention\Image\ImageManager;
 use InvalidArgumentException;
 use Symfony\Component\Filesystem\Exception\IOException;
@@ -17,6 +18,8 @@ use function pathinfo;
 use function sprintf;
 
 use const IMAGETYPE_JPEG;
+use const IMAGETYPE_PNG;
+use const IMAGETYPE_WEBP;
 use const PATHINFO_FILENAME;
 
 class ImagePreprocess
@@ -26,7 +29,7 @@ class ImagePreprocess
         private readonly ImageManager $imageManager,
     ) {}
 
-    public function execute(string $imagePath): void
+    public function execute(string $imagePath): GdImage
     {
         $processedImagePath = $this->getJpegImagePath($imagePath);
 
@@ -38,9 +41,14 @@ class ImagePreprocess
             $image->reduceColors(256, '#ffffff');
         }
 
-        $image->contrast(10)->brightness(-10);
+        $image->contrast(10);
         $image->toJpeg(100);
         $image->save($processedImagePath);
+
+        /** @var GdImage $gdImage */
+        $gdImage = $image->core()->native();
+
+        return $gdImage;
     }
 
     private function getJpegImagePath(string $imagePath): string

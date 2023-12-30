@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Adapter\Framework\Command;
 
+use App\Application\UseCase\Preprocess\ExtractColor;
 use App\Application\UseCase\Preprocess\ImagePreprocess;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -28,23 +29,25 @@ use function sprintf;
 )]
 class ImageMLPreprocess extends Command
 {
-    private const string VALID_IMAGES_PATH = '/public/images/valid';
-    private const string INVALID_IMAGES_PATH = '/public/images/invalid';
+    public const string VALID_IMAGES = 'valid';
+    public const string INVALID_IMAGES = 'invalid';
+    private const string IMAGES_PATH = '/public/images/%s';
 
     public function __construct(
         private readonly ImagePreprocess $imagePreprocess,
+        private readonly ExtractColor $extractColor,
         private readonly KernelInterface $kernel,
         private readonly Filesystem $filesystem,
     ) {
         parent::__construct();
     }
 
-    public function removePreviousProcessedImages(): void
+    public function removePreviousProcessedImages(string $imagesPath): void
     {
         $processedPath = sprintf(
             '%s%s%s',
             $this->kernel->getProjectDir(),
-            self::INVALID_IMAGES_PATH,
+            $imagesPath,
             '/processed',
         );
 
@@ -55,54 +58,50 @@ class ImageMLPreprocess extends Command
     {
         parent::configure();
 
-        $this->addOption('valid', mode: InputOption::VALUE_NONE);
-        $this->addOption('invalid', mode: InputOption::VALUE_NONE);
+        $this->addOption(self::VALID_IMAGES, mode: InputOption::VALUE_NONE);
+        $this->addOption(self::INVALID_IMAGES, mode: InputOption::VALUE_NONE);
     }
 
     #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Starting valid image background detection..');
+        $io->title('Starting image preprocessing for ML background detector..');
 
-        $valid = $input->getOption('valid');
-        $invalid = $input->getOption('invalid');
+        $valid = $input->getOption(self::VALID_IMAGES);
+        $invalid = $input->getOption(self::INVALID_IMAGES);
         $both = !$valid && !$invalid;
 
         if ($valid || $both) {
-            $this->preprocessValidImages($output, $io);
+            $this->preprocessImages($output, $io, self::VALID_IMAGES);
         }
 
         if ($invalid || $both) {
-            $this->preprocessInvalidImages($output, $io);
+            $this->preprocessImages($output, $io, self::INVALID_IMAGES);
         }
 
         return Command::SUCCESS;
     }
 
-    private function preprocessValidImages(OutputInterface $output, SymfonyStyle $io): void
+    private function preprocessImages(OutputInterface $output, SymfonyStyle $io, string $imagesType): void
     {
-        $processedPath = sprintf(
-            '%s%s%s',
-            $this->kernel->getProjectDir(),
-            self::VALID_IMAGES_PATH,
-            '/processed',
-        );
+        $imagesPath = sprintf(self::IMAGES_PATH, $imagesType);
 
-        $this->filesystem->remove($processedPath);
+        $this->removePreviousProcessedImages($imagesPath);
 
-        $validImages = $this->getFilesInDirectory(self::VALID_IMAGES_PATH);
+        $images = $this->getFilesInDirectory($imagesPath);
 
-        $progressBar = $this->getProgressBar($output, $validImages);
+        $progressBar = $this->getProgressBar($output, $images);
 
         $startTime = microtime(true);
 
-        foreach ($validImages as $image) {
-            $progressBar->setMessage(sprintf('Processing valid image "%s"', $image), 'filename');
+        foreach ($images as $image) {
+            $progressBar->setMessage(sprintf('Processing %s image "%s"', $imagesType, $image), 'filename');
             $progressBar->display();
             $progressBar->advance();
 
-            $this->imagePreprocess->execute($image);
+            $processedImage = $this->imagePreprocess->execute($image);
+            $colorData = $this->extractColor->execute($processedImage, $imagesType === self::VALID_IMAGES);
         }
 
         $progressBar->finish();
@@ -112,39 +111,9 @@ class ImageMLPreprocess extends Command
         $elapsedTime = microtime(true) - $startTime;
 
         $io->success(sprintf(
-            'Preprocessed %s valid images in %s seconds.',
-            count($validImages),
-            number_format($elapsedTime, 3),
-        ));
-    }
-
-    private function preprocessInvalidImages(OutputInterface $output, SymfonyStyle $io): void
-    {
-        $this->removePreviousProcessedImages();
-
-        $invalidImages = $this->getFilesInDirectory(self::INVALID_IMAGES_PATH);
-
-        $progressBar = $this->getProgressBar($output, $invalidImages);
-
-        $startTime = microtime(true);
-
-        foreach ($invalidImages as $image) {
-            $progressBar->setMessage(sprintf('Processing invalid image "%s"', $image), 'filename');
-            $progressBar->display();
-            $progressBar->advance();
-
-            $this->imagePreprocess->execute($image);
-        }
-
-        $progressBar->finish();
-
-        $io->newLine();
-
-        $elapsedTime = microtime(true) - $startTime;
-
-        $io->success(sprintf(
-            'Preprocessed %s invalid images in %s seconds.',
-            count($invalidImages),
+            'Preprocessed %s %s images in %s seconds.',
+            count($images),
+            $imagesType,
             number_format($elapsedTime, 3),
         ));
     }
