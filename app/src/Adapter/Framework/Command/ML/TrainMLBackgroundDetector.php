@@ -10,6 +10,7 @@ use Phpml\Classification\KNearestNeighbors;
 use Phpml\CrossValidation\StratifiedRandomSplit;
 use Phpml\Dataset\ArrayDataset;
 use Phpml\Metric\Accuracy;
+use Phpml\Metric\ConfusionMatrix;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -44,18 +45,18 @@ class TrainMLBackgroundDetector extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Starting ML white background detector training..');
 
-        $this->train($io);
+        $this->train($output, $io);
 
         return Command::SUCCESS;
     }
 
-    private function train(SymfonyStyle $io): void
+    private function train(OutputInterface $output, SymfonyStyle $io): void
     {
         $startTime = microtime(true);
 
         $dataset = $this->generateDataset();
 
-        $split = new StratifiedRandomSplit($dataset, 0.001);
+        $split = new StratifiedRandomSplit($dataset, 0.2);
         $trainingSet = $split->getTrainSamples();
         $trainingLabels = $split->getTrainLabels();
         $testingSet = $split->getTestSamples();
@@ -68,6 +69,13 @@ class TrainMLBackgroundDetector extends Command
         $predictedLabels = $classifier->predict($testingSet);
 
         $accuracy = Accuracy::score($predictedLabels, $actualLabels);
+        $confusionMatrix = ConfusionMatrix::compute($actualLabels, $predictedLabels);
+
+        $output->writeln('Confusion Matrix:');
+        $output->writeln('---------------------');
+        $output->writeln(sprintf('| TP: %-3d | FP: %-3d |', $confusionMatrix[1][1], $confusionMatrix[1][0]));
+        $output->writeln(sprintf('| FN: %-3d | TN: %-3d |', $confusionMatrix[0][1], $confusionMatrix[0][0]));
+        $output->writeln(sprintf('---------------------%s', "\n"));
 
         $elapsedTime = microtime(true) - $startTime;
 
