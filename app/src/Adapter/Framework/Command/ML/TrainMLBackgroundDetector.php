@@ -6,11 +6,10 @@ namespace App\Adapter\Framework\Command\ML;
 
 use Generator;
 use Override;
-use Phpml\Classification\KNearestNeighbors;
-use Phpml\CrossValidation\StratifiedRandomSplit;
-use Phpml\Dataset\ArrayDataset;
-use Phpml\Metric\Accuracy;
-use Phpml\Metric\ConfusionMatrix;
+use Rubix\ML\Classifiers\SVC;
+use Rubix\ML\CrossValidation\Metrics\Accuracy;
+use Rubix\ML\CrossValidation\Reports\ConfusionMatrix;
+use Rubix\ML\Datasets\Labeled;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,7 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpKernel\KernelInterface;
 
-use function array_shift;
+use function array_map;
+use function array_pop;
 use function fclose;
 use function fgetcsv;
 use function fopen;
@@ -54,25 +54,26 @@ class TrainMLBackgroundDetector extends Command
     {
         $startTime = microtime(true);
 
-        $dataset = $this->generateDataset();
+        // TODO Change data file format to NDJSON
+        [$trainingSet, $testingSet]  = $this->generateDataset()->stratifiedSplit(0.7);
 
-        $split = new StratifiedRandomSplit($dataset, 0.2);
-        $trainingSet = $split->getTrainSamples();
-        $trainingLabels = $split->getTrainLabels();
-        $testingSet = $split->getTestSamples();
-        $actualLabels = $split->getTestLabels();
+        $classifier = new SVC();
+        $classifier->train($trainingSet);
 
-        $classifier = new KNearestNeighbors();
-        $classifier->train($trainingSet, $trainingLabels);
-
-        /** @var array<int, int> $predictedLabels */
+        /** @var array<int, string> $predictedLabels */
         $predictedLabels = $classifier->predict($testingSet);
 
-        $accuracy = Accuracy::score($predictedLabels, $actualLabels);
+        /** @var array<int, string> $actualLabels */
+        $actualLabels = $testingSet->labels();
+
+        $accuracy = new Accuracy();
+        $score = $accuracy->score($predictedLabels, $actualLabels);
 
         if ($output->isVerbose()) {
-            $confusionMatrix = ConfusionMatrix::compute($actualLabels, $predictedLabels);
-            $this->printConfusionMatrix($output, $confusionMatrix);
+            $confusionMatrix = (new ConfusionMatrix())->generate($predictedLabels, $actualLabels);
+            /** @var array<string, array<string, int>> $matrixArray */
+            $matrixArray = $confusionMatrix->toArray();
+            $this->printConfusionMatrix($output, $matrixArray);
         }
 
         $elapsedTime = microtime(true) - $startTime;
@@ -80,7 +81,7 @@ class TrainMLBackgroundDetector extends Command
         $io->success(sprintf(
             'Model trained in %s seconds. Accuracy: %s',
             $elapsedTime,
-            $accuracy,
+            $score,
         ));
     }
 
@@ -103,7 +104,7 @@ class TrainMLBackgroundDetector extends Command
         }
     }
 
-    private function generateDataset(): ArrayDataset
+    private function generateDataset(): Labeled
     {
         $csvGenerator = $this->readCsvDataGenerator($this->getDataFile());
 
@@ -112,22 +113,22 @@ class TrainMLBackgroundDetector extends Command
 
         /** @var array<int, string> $row */
         foreach ($csvGenerator as $row) {
-            $labels[] = array_shift($row);
-            $samples[] = $row;
+            $labels[] = array_pop($row) ?? '';
+            $samples[] = array_map(fn ($value): float => (float) $value, $row);
         }
 
-        return new ArrayDataset($samples, $labels);
+        return new Labeled($samples, $labels);
     }
 
     /**
-     * @param array<int, array<int, int>> $confusionMatrix
+     * @param array<string, array<string, int>> $confusionMatrix
      */
     private function printConfusionMatrix(OutputInterface $output, array $confusionMatrix): void
     {
         $output->writeln('Confusion Matrix:');
         $output->writeln('---------------------');
-        $output->writeln(sprintf('| TP: %-3d | FP: %-3d |', $confusionMatrix[1][1], $confusionMatrix[1][0]));
-        $output->writeln(sprintf('| FN: %-3d | TN: %-3d |', $confusionMatrix[0][1], $confusionMatrix[0][0]));
+        $output->writeln(sprintf('| TP: %-3d | FP: %-3d |', $confusionMatrix['valid']['valid'], $confusionMatrix['valid']['invalid']));
+        $output->writeln(sprintf('| FN: %-3d | TN: %-3d |', $confusionMatrix['invalid']['valid'], $confusionMatrix['invalid']['invalid']));
         $output->writeln(sprintf('---------------------%s', "\n"));
     }
 }

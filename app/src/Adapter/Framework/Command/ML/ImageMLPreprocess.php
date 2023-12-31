@@ -20,7 +20,6 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 use function array_slice;
-use function array_unshift;
 use function count;
 use function fopen;
 use function fputcsv;
@@ -124,7 +123,7 @@ class ImageMLPreprocess extends Command
 
             $processedImage = $this->imagePreprocess->execute($image);
             $colorData = $this->extractColor->execute($processedImage);
-            array_unshift($colorData, $imagesType === self::VALID_IMAGES ? 1 : 0);
+            $colorData[] = $imagesType;
 
             fputcsv($csvFile, $colorData);
         }
