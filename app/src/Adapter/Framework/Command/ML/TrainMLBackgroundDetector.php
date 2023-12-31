@@ -6,7 +6,8 @@ namespace App\Adapter\Framework\Command\ML;
 
 use Generator;
 use Override;
-use Rubix\ML\Classifiers\SVC;
+use Rubix\ML\Classifiers\ClassificationTree;
+use Rubix\ML\Classifiers\RandomForest;
 use Rubix\ML\CrossValidation\Metrics\Accuracy;
 use Rubix\ML\CrossValidation\Reports\ConfusionMatrix;
 use Rubix\ML\Datasets\Labeled;
@@ -55,9 +56,9 @@ class TrainMLBackgroundDetector extends Command
         $startTime = microtime(true);
 
         // TODO Change data file format to NDJSON
-        [$trainingSet, $testingSet]  = $this->generateDataset()->stratifiedSplit(0.7);
+        [$trainingSet, $testingSet]  = $this->generateDataset()->stratifiedSplit(0.8);
 
-        $classifier = new SVC();
+        $classifier = new RandomForest(new ClassificationTree(10), 256, 0.5, true);
         $classifier->train($trainingSet);
 
         /** @var array<int, string> $predictedLabels */
