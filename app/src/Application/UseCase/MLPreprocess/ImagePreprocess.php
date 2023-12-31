@@ -24,6 +24,8 @@ use const PATHINFO_FILENAME;
 
 class ImagePreprocess
 {
+    const int IMAGE_SIZE = 32;
+
     public function __construct(
         private readonly Filesystem $filesystem,
         private readonly ImageManager $imageManager,
@@ -35,13 +37,12 @@ class ImagePreprocess
 
         $image = $this->imageManager->read($imagePath);
         $image->greyscale();
-        $image->resize(256, 256);
+        $image->resize(self::IMAGE_SIZE, self::IMAGE_SIZE);
 
         if ($this->isAlphaImage($imagePath)) {
             $image->reduceColors(256, '#ffffff');
         }
 
-        $image->contrast(10);
         $image->toJpeg(100);
         $image->save($processedImagePath);
 
