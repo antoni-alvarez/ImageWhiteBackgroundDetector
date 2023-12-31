@@ -22,7 +22,7 @@ RUN apk --no-cache add libpng libpng-dev libjpeg-turbo libjpeg-turbo-dev libwebp
     && docker-php-ext-install gd
 
 # Set the memory limit in php.ini
-RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/docker-php-memlimit.ini
+RUN echo "memory_limit=1024M" > /usr/local/etc/php/conf.d/docker-php-memlimit.ini
 
 # Keep the container running
 CMD ["tail", "-f", "/dev/null"]
