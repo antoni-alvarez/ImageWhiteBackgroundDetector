@@ -8,10 +8,10 @@ use function abs;
 
 class ColorService
 {
-    private const int WHITE_VALUE = 255;
-    private const int WHITE_LIKE_MIN_VALUE = 230;
-    private const int ALPHA_VALUE = 127;
-    private const int MAX_DISTANCE = 8;
+    private const WHITE_VALUE = 255;
+    private const WHITE_LIKE_MIN_VALUE = 230;
+    private const ALPHA_VALUE = 127;
+    private const MAX_DISTANCE = 8;
 
     /**
      * @param array<string, int> $pixelColor

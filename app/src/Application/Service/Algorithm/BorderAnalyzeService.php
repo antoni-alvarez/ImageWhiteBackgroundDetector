@@ -18,7 +18,7 @@ use function sprintf;
 
 class BorderAnalyzeService
 {
-    private const int NUM_POINTS = 2500;
+    private const NUM_POINTS = 2500;
 
     private GdImage $image;
     private int $width;

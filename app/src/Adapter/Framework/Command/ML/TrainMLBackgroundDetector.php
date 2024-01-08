@@ -32,7 +32,7 @@ use function sprintf;
 )]
 class TrainMLBackgroundDetector extends Command
 {
-    private const string DATA_PATH = '/public/data.csv';
+    private const DATA_PATH = '/public/data.csv';
 
     public function __construct(
         private readonly KernelInterface $kernel,
@@ -56,7 +56,7 @@ class TrainMLBackgroundDetector extends Command
         $startTime = microtime(true);
 
         // TODO Change data file format to NDJSON
-        [$trainingSet, $testingSet]  = $this->generateDataset()->stratifiedSplit(0.8);
+        [$trainingSet, $testingSet] = $this->generateDataset()->stratifiedSplit(0.8);
 
         $classifier = new RandomForest(new ClassificationTree(10), 256, 0.5, true);
         $classifier->train($trainingSet);

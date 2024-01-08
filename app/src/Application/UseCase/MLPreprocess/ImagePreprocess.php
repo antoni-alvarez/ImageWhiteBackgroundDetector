@@ -24,7 +24,7 @@ use const PATHINFO_FILENAME;
 
 class ImagePreprocess
 {
-    private const int IMAGE_SIZE = 32;
+    private const IMAGE_SIZE = 32;
 
     public function __construct(
         private readonly Filesystem $filesystem,

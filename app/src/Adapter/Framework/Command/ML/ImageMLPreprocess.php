@@ -33,11 +33,11 @@ use function sprintf;
 )]
 class ImageMLPreprocess extends Command
 {
-    public const string LIMIT = 'limit';
-    public const string VALID_IMAGES = 'valid';
-    public const string INVALID_IMAGES = 'invalid';
-    private const string IMAGES_PATH = '/public/images/%s';
-    private const string DATA_PATH = '/public/data.csv';
+    public const LIMIT = 'limit';
+    public const VALID_IMAGES = 'valid';
+    public const INVALID_IMAGES = 'invalid';
+    private const IMAGES_PATH = '/public/images/%s';
+    private const DATA_PATH = '/public/data.csv';
 
     public function __construct(
         private readonly ImagePreprocess $imagePreprocess,

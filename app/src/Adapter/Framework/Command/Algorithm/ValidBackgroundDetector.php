@@ -34,8 +34,8 @@ use const PATHINFO_BASENAME;
 )]
 class ValidBackgroundDetector extends Command
 {
-    private const string VALID_IMAGES_PATH = '/public/images/valid';
-    private const string INVALID_IMAGES_PATH = '/public/images/invalid';
+    private const VALID_IMAGES_PATH = '/public/images/valid';
+    private const INVALID_IMAGES_PATH = '/public/images/invalid';
 
     public function __construct(
         private readonly ValidateImageBackground $validBackground,
