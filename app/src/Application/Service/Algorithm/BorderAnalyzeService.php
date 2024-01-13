@@ -6,7 +6,6 @@ namespace App\Application\Service\Algorithm;
 
 use App\Domain\Enum\BorderSide;
 use GdImage;
-use Random\Randomizer;
 use Symfony\Component\Filesystem\Exception\IOException;
 
 use function imagecolorat;
@@ -14,6 +13,7 @@ use function imagecolorsforindex;
 use function imagesx;
 use function imagesy;
 use function max;
+use function mt_rand;
 use function sprintf;
 
 class BorderAnalyzeService
@@ -28,7 +28,6 @@ class BorderAnalyzeService
 
     public function __construct(
         private readonly ColorService $colorService,
-        private readonly Randomizer $randomizer,
     ) {}
 
     public function setImage(GdImage $image): void
@@ -125,20 +124,20 @@ class BorderAnalyzeService
     {
         switch ($border) {
             case BorderSide::TOP:
-                $x = $this->randomizer->getInt($this->borderWidth, $this->width - $this->borderWidth);
-                $y = $this->randomizer->getInt(0, $this->borderHeight - 1);
+                $x = mt_rand($this->borderWidth, $this->width - $this->borderWidth);
+                $y = mt_rand(0, $this->borderHeight - 1);
                 break;
             case BorderSide::RIGHT:
-                $x = $this->randomizer->getInt($this->width - $this->borderWidth, $this->width - 1);
-                $y = $this->randomizer->getInt(0, $this->height - 1);
+                $x = mt_rand($this->width - $this->borderWidth, $this->width - 1);
+                $y = mt_rand(0, $this->height - 1);
                 break;
             case BorderSide::BOTTOM:
-                $x = $this->randomizer->getInt($this->borderWidth, $this->width - $this->borderWidth);
-                $y = $this->randomizer->getInt($this->height - $this->borderHeight, $this->height - 1);
+                $x = mt_rand($this->borderWidth, $this->width - $this->borderWidth);
+                $y = mt_rand($this->height - $this->borderHeight, $this->height - 1);
                 break;
             case BorderSide::LEFT:
-                $x = $this->randomizer->getInt(0, $this->borderWidth - 1);
-                $y = $this->randomizer->getInt(0, $this->height - 1);
+                $x = mt_rand(0, $this->borderWidth - 1);
+                $y = mt_rand(0, $this->height - 1);
                 break;
         }
 
